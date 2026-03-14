@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Auto Video Bot - YouTube & Facebook</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <span>AutoVidBot</span>
+            </div>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <ul class="nav-links">
+            <li class="active" onclick="showSection('dashboard')">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </li>
+            <li onclick="showSection('setup')">
+                <i class="fas fa-cog"></i>
+                <span>Setup & Settings</span>
+            </li>
+            <li onclick="showSection('generate')">
+                <i class="fas fa-magic"></i>
+                <span>Generate Video</span>
+            </li>
+            <li onclick="showSection('videos')">
+                <i class="fas fa-video"></i>
+                <span>My Videos</span>
+            </li>
+            <li onclick="showSection('schedule')">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Schedule</span>
+            </li>
+            <li onclick="showSection('analytics')">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics</span>
+            </li>
+            <li onclick="showSection('auto-mode')">
+                <i class="fas fa-play-circle"></i>
+                <span>Auto Mode</span>
+            </li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <div class="bot-status" id="botStatus">
+                <div class="status-dot offline"></div>
+                <span>Bot Offline</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        
+        <!-- ==================== DASHBOARD ==================== -->
+        <section id="section-dashboard" class="section active">
+            <div class="section-header">
+                <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="refreshDashboard()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Status Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalVideos">0</h3>
+                        <p>Total Videos Generated</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                        <i class="fab fa-youtube"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="ytUploads">0</h3>
+                        <p>YouTube Uploads</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                        <i class="fab fa-facebook"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="fbUploads">0</h3>
+                        <p>Facebook Uploads</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="scheduledCount">0</h3>
+                        <p>Scheduled</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bot Control -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-robot"></i> Bot Control</h2>
+                </div>
+                <div class="card-body">
+                    <div class="bot-control-panel">
+                        <div class="bot-status-large" id="botStatusLarge">
+                            <div class="pulse-dot offline"></div>
+                            <span>Bot is Offline</span>
+                        </div>
+                        <div class="bot-buttons">
+                            <button class="btn btn-success btn-lg" onclick="startBot()">
+                                <i class="fas fa-play"></i> Start Bot
+                            </button>
+                            <button class="btn btn-danger btn-lg" onclick="stopBot()">
+                                <i class="fas fa-stop"></i> Stop Bot
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-history"></i> Recent Activity</h2>
+                </div>
+                <div class="card-body">
+                    <div class="activity-list" id="activityList">
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="activity-info">
+                                <p>Setup your channel to get started!</p>
+                                <span class="activity-time">Just now</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- ==================== SETUP & SETTINGS ==================== -->
+        <section id="section-setup" class="section">
+            <div class="section-header">
+                <h1><i class="fas fa-cog"></i> Setup & Settings</h1>
+            </div>
+            
+            <!-- Connection Status -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-plug"></i> Connection Status</h2>
+                </div>
+                <div class="card-body">
+                    <div class="connection-grid">
+                        <div class="connection-item" id="ytConnection">
+                            <i class="fab fa-youtube"></i>
+                            <span>YouTube</span>
+                            <div class="status-badge disconnected">Not Connected</div>
+                        </div>
+                        <div class="connection-item" id="fbConnection">
+                            <i class="fab fa-facebook"></i>
+                            <span>Facebook</span>
+                            <div class="status-badge disconnected">Not Connected</div>
+                        </div>
+                        <div class="connection-item" id="backendConnection">
+                            <i class="fas fa-server"></i>
+                            <span>Backend Server</span>
+                            <div class="status-badge disconnected">Checking...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Channel Settings -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-tv"></i> Channel Settings</h2>
+                </div>
+                <div class="card-body">
+                    <form id="settingsForm" onsubmit="saveSettings(event)">
+                        
+                        <!-- Channel Name -->
+                        <div class="form-group">
+                            <label for="channelName">
+                                <i class="fas fa-signature"></i> Channel Name
+                            </label>
+                            <input type="text" id="channelName" 
+                                   placeholder="Enter your channel name"
+                                   class="form-input">
+                            <small>This will be used as watermark and for channel analysis</small>
+                        </div>
+                        
+                        <!-- Channel Niche -->
+                        <div class="form-group">
+                            <label for="channelNiche">
+                                <i class="fas fa-bullseye"></i> Channel Niche / Category
+                            </label>
+                            <select id="channelNiche" class="form-input">
+                                <option value="">-- Select Niche --</option>
+                                <option value="motivation">💪 Motivation / प्रेरणा</option>
+                                <option value="tech">💻 Technology / टेक</option>
+                                <option value="health">🏥 Health & Fitness / स्वास्थ्य</option>
+                                <option value="facts">🧠 Amazing Facts / रोचक तथ्य</option>
+                                <option value="finance">💰 Finance & Money / पैसा</option>
+                                <option value="cooking">🍳 Cooking / खाना</option>
+                                <option value="education">📚 Education / शिक्षा</option>
+                                <option value="history">📜 History / इतिहास</option>
+                                <option value="science">🔬 Science / विज्ञान</option>
+                                <option value="entertainment">🎭 Entertainment / मनोरंजन</option>
+                                <option value="spiritual">🙏 Spiritual / आध्यात्मिक</option>
+                                <option value="news">📰 News & Current Affairs</option>
+                                <option value="gaming">🎮 Gaming</option>
+                                <option value="custom">✏️ Custom (Enter Below)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="customNicheGroup" style="display:none;">
+                            <label for="customNiche">
+                                <i class="fas fa-edit"></i> Custom Niche
+                            </label>
+                            <input type="text" id="customNiche" 
+                                   placeholder="Enter your custom niche"
+                                   class="form-input">
+                        </div>
+                        
+                        <!-- YouTube Settings -->
+                        <div class="form-section">
+                            <h3><i class="fab fa-youtube" style="color: #ff0000;"></i> YouTube Settings</h3>
+                            
+                            <div class="form-group">
+                                <label for="youtubeChannelId">
+                                    YouTube Channel ID
+                                </label>
+                                <input type="text" id="youtubeChannelId" 
+                                       placeholder="UCxxxxxxxxxxxxxxxxxx"
+                                       class="form-input">
+                                <small>
+                                    <a href="https://www.youtube.com/account_advanced" target="_blank">
+                                        Find your Channel ID here →
+                                    </a>
+                                </small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="youtubeApiKey">
+                                    YouTube API Key (Optional - for analytics)
+                                </label>
+                                <input type="password" id="youtubeApiKey" 
+                                       placeholder="AIzaSy..."
+                                       class="form-input">
+                                <small>
+                                    <a href="https://console.cloud.google.com/" target="_blank">
+                                        Get API Key from Google Cloud Console →
+                                    </a>
+                                </small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>YouTube OAuth (For Upload)</label>
+                                <button type="button" class="btn btn-youtube" onclick="connectYouTube()">
+                                    <i class="fab fa-youtube"></i> Connect YouTube Account
+                                </button>
+                                <small>One-time setup. Allows bot to upload videos.</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Facebook Settings -->
+                        <div class="form-section">
+                            <h3><i class="fab fa-facebook" style="color: #1877f2;"></i> Facebook Settings</h3>
+                            
+                            <div class="form-group">
+                                <label for="facebookPageId">
+                                    Facebook Page ID
+                                </label>
+                                <input type="text" id="facebookPageId" 
+                                       placeholder="Your Facebook Page ID"
+                                       class="form-input">
+                                <small>
+                                    Go to your Page → About → Page ID
+                                </small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="facebookToken">
+                                    Facebook Page Access Token
+                                </label>
+                                <input type="password" id="facebookToken" 
+                                       placeholder="EAAxxxxxxxx..."
+                                       class="form-input">
+                                <small>
+                                    <a href="https://developers.facebook.com/tools/explorer/" target="_blank">
+                                        Get token from Graph API Explorer →
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Video Settings -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-film"></i> Video Settings</h3>
+                            
+                            <div class="form-group">
+                                <label>Video Type</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-card">
+                                        <input type="checkbox" id="videoShort" value="short" checked>
+                                        <div class="checkbox-card-content">
+                                            <i class="fas fa-mobile-alt"></i>
+                                            <h4>Short Video</h4>
+                                            <p>60 sec | 9:16 | Reels/Shorts</p>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="checkbox-card">
+                                        <input type="checkbox" id="videoLong" value="long">
+                                        <div class="checkbox-card-content">
+                                            <i class="fas fa-desktop"></i>
+                                            <h4>Long Video</h4>
+                                            <p>5-10 min | 16:9 | Regular</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Short Video Duration -->
+                            <div class="form-group" id="shortDurationGroup">
+                                <label for="shortDuration">
+                                    Short Video Duration (seconds)
+                                </label>
+                                <input type="range" id="shortDuration" 
+                                       min="30" max="90" value="60"
+                                       class="form-range"
+                                       oninput="document.getElementById('shortDurVal').textContent = this.value + 's'">
+                                <span id="shortDurVal" class="range-value">60s</span>
+                            </div>
+                            
+                            <!-- Long Video Duration -->
+                            <div class="form-group" id="longDurationGroup" style="display:none;">
+                                <label for="longDuration">
+                                    Long Video Duration (minutes)
+                                </label>
+                                <input type="range" id="longDuration" 
+                                       min="3" max="15" value="5"
+                                       class="form-range"
+                                       oninput="document.getElementById('longDurVal').textContent = this.value + ' min'">
+                                <span id="longDurVal" class="range-value">5 min</span>
+                            </div>
+                            
+                            <!-- Voice Selection -->
+                            <div class="form-group">
+                                <label for="voiceSelect">
+                                    <i class="fas fa-microphone"></i> Voice Selection
+                                </label>
+                                <select id="voiceSelect" class="form-input">
+                                    <option value="hi-IN-SwaraNeural">👩 Swara (Female - Natural)</option>
+                                    <option value="hi-IN-MadhurNeural">👨 Madhur (Male - Natural)</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Voice Speed -->
+                            <div class="form-group">
+                                <label for="voiceSpeed">
+                                    Voice Speed
+                                </label>
+                                <input type="range" id="voiceSpeed" 
+                                       min="-30" max="30" value="0"
+                                       class="form-range"
+                                       oninput="document.getElementById('speedVal').textContent = (this.value > 0 ? '+' : '') + this.value + '%'">
+                                <span id="speedVal" class="range-value">0%</span>
+                            </div>
+                            
+                            <!-- Videos Per Day -->
+                            <div class="form-group">
+                                <label for="videosPerDay">
+                                    <i class="fas fa-calendar-day"></i> Videos Per Day
+                                </label>
+                                <select id="videosPerDay" class="form-input">
+                                    <option value="1">1 Video / Day</option>
+                                    <option value="2">2 Videos / Day</option>
+                                    <option value="3">3 Videos / Day</option>
+                                    <option value="5">5 Videos / Day</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Upload Settings -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-upload"></i> Upload Settings</h3>
+                            
+                            <div class="form-group">
+                                <label>Upload Platforms</label>
+                                <div class="toggle-group">
+                                    <label class="toggle">
+                                        <input type="checkbox" id="uploadYoutube" checked>
+                                        <span class="toggle-slider"></span>
+                                        <span class="toggle-label">
+                                            <i class="fab fa-youtube"></i> YouTube
+                                        </span>
+                                    </label>
+                                    
+                                    <label class="toggle">
+                                        <input type="checkbox" id="uploadFacebook" checked>
+                                        <span class="toggle-slider"></span>
+                                        <span class="toggle-label">
+                                            <i class="fab fa-facebook"></i> Facebook
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-clock"></i> Posting Strategy
+                                </label>
+                                <select id="postStrategy" class="form-input">
+                                    <option value="peak">🔥 Peak Hours (Maximum Reach)</option>
+                                    <option value="immediate">⚡ Immediate Upload</option>
+                                    <option value="custom">⏰ Custom Schedule</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Save Button -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Save All Settings
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-lg" onclick="testConnection()">
+                                <i class="fas fa-plug"></i> Test Connections
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+        
+        <!-- ==================== GENERATE VIDEO ==================== -->
+        <section id="section-generate" class="section">
+            <div class="section-header">
+                <h1><i class="fas fa-magic"></i> Generate Video</h1>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-pencil-alt"></i> Create New Video</h2>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Topic Selection -->
+                    <div class="form-group">
+                        <label for="topicMode">Topic Selection</label>
+                        <div class="radio-cards">
+                            <label class="radio-card">
+                                <input type="radio" name="topicMode" value="auto" checked 
+                                       onchange="toggleTopicInput()">
+                                <div class="radio-card-content">
+                                    <i class="fas fa-magic"></i>
+                                    <h4>Auto Generate</h4>
+                                    <p>AI will pick trending topic based on your niche</p>
+                                </div>
+                            </label>
+                            
+                            <label class="radio-card">
+                                <input type="radio" name="topicMode" value="custom"
+                                       onchange="toggleTopicInput()">
+                                <div class="radio-card-content">
+                                    <i class="fas fa-keyboard"></i>
+                                    <h4>Custom Topic</h4>
+                                    <p>Enter your own topic</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="customTopicGroup" style="display:none;">
+                        <label for="customTopic">
+                            Enter Topic (Hindi or English)
+                        </label>
+                        <input type="text" id="customTopic" 
+                               placeholder="e.g., सफलता के 5 नियम"
+                               class="form-input">
+                    </div>
+                    
+                    <!-- Video Type for this generation -->
+                    <div class="form-group">
+                        <label>Generate As:</label>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline active" 
+                                    onclick="setGenType('short', this)" id="genShort">
+                                📱 Short (60s)
+                            </button>
+                            <button type="button" class="btn btn-outline" 
+                                    onclick="setGenType('long', this)" id="genLong">
+                                🖥️ Long (5 min)
+                            </button>
+                            <button type="button" class="btn btn-outline" 
+                                    onclick="setGenType('both', this)" id="genBoth">
+                                📱🖥️ Both
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Options -->
+                    <div class="form-group">
+                        <label>After Generation:</label>
+                        <div class="checkbox-inline">
+                            <label>
+                                <input type="checkbox" id="genAutoUpload" checked>
+                                Auto Upload at Peak Time
+                            </label>
+                            <label>
+                                <input type="checkbox" id="genAddSubtitles" checked>
+                                Add Subtitles
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Generate Button -->
+                    <button class="btn btn-primary btn-xl" onclick="generateVideo()" id="generateBtn">
+                        <i class="fas fa-magic"></i> 
+                        Generate Video Now
+                    </button>
+                    
+                    <!-- Progress -->
+                    <div class="progress-container" id="progressContainer" style="display:none;">
+                        <div class="progress-steps">
+                            <div class="progress-step" id="step1">
+                                <div class="step-icon"><i class="fas fa-brain"></i></div>
+                                <div class="step-text">Generating Script...</div>
+                                <div class="step-status"><i class="fas fa-spinner fa-spin"></i></div>
+                            </div>
+                            <div class="progress-step" id="step2">
+                                <div class="step-icon"><i class="fas fa-microphone"></i></div>
+                                <div class="step-text">Creating Voice Over...</div>
+                                <div class="step-status"></div>
+                            </div>
+                            <div class="progress-step" id="step3">
+                                <div class="step-icon"><i class="fas fa-film"></i></div>
+                                <div class="step-text">Making Video...</div>
+                                <div class="step-status"></div>
+                            </div>
+                            <div class="progress-step" id="step4">
+                                <div class="step-icon"><i class="fas fa-tags"></i></div>
+                                <div class="step-text">Generating Metadata...</div>
+                                <div class="step-status"></div>
+                            </div>
+                            <div class="progress-step" id="step5">
+                                <div class="step-icon"><i class="fas fa-upload"></i></div>
+                                <div class="step-text">Scheduling Upload...</div>
+                                <div class="step-status"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                        <p class="progress-text" id="progressText">Starting...</p>
+                    </div>
+                    
+                    <!-- Result -->
+                    <div class="result-container" id="resultContainer" style="display:none;">
+                        <div class="result-card success">
+                            <i class="fas fa-check-circle"></i>
+                            <h3>Video Generated Successfully!</h3>
+                            <div class="result-details" id="resultDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- ==================== MY VIDEOS ==================== -->
+        <section id="section-videos" class="section">
+            <div class="section-header">
+                <h1><i class="fas fa-video"></i> My Videos</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="loadVideos()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="video-grid" id="videoGrid">
+                        <div class="empty-state">
+                            <i class="fas fa-film"></i>
+                            <h3>No videos yet</h3>
+                            <p>Generate your first video to see it here!</p>
+                            <button class="btn btn-primary" onclick="showSection('generate')">
+                                <i class="fas fa-magic"></i> Generate First Video
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- ==================== SCHEDULE ==================== -->
+        <section id="section-schedule" class="section">
+            <div class="section-header">
+                <h1><i class="fas fa-calendar-alt"></i> Upload Schedule</h1>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-clock"></i> Peak Hours (Auto-detected)</h2>
+                </div>
+                <div class="card-body">
+                    <div class="schedule-grid">
+                        <!-- YouTube Peak Times -->
+                        <div class="schedule-platform">
+                            <h3><i class="fab fa-youtube" style="color: red;"></i> YouTube Peak Times</h3>
+                            <div class="time-slots" id="ytTimeSlots">
+                                <div class="day-row">
+                                    <span class="day-name">Mon-Fri</span>
+                                    <span class="time-badge">11:00 AM</span>
+                                    <span class="time-badge">5:00 PM</span>
+                                    <span class="time-badge">8:00 PM</span>
+                                </div>
+                                <div class="day-row">
+                                    <span class="day-name">Sat-Sun</span>
+                                    <span class="time-badge">10:00 AM</span>
+                                    <span class="time-badge">4:00 PM</span>
+                                    <span class="time-badge">9:00 PM</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Facebook Peak Times -->
+                        <div class="schedule-platform">
+                            <h3><i class="fab fa-facebook" style="color: #1877f2;"></i> Facebook Peak Times</h3>
+                            <div class="time-slots" id="fbTimeSlots">
+                                <div class="day-row">
+                                    <span class="day-name">Mon-Fri</span>
+                                    <span class="time-badge">1:00 PM</span>
+                                    <span class="time-badge">7:00 PM</span>
+                                </div>
+                                <div class="day-row">
+                                    <span class="day-name">Sat-Sun</span>
+                                    <span class="time-badge">12:00 PM</span>
+                                    <span class="time-badge">8:00 PM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upcoming Schedule -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-list"></i> Upcoming Uploads</h2>
+                </div>
+                <div class="card-body">
+                    <div class="schedule-list" id="scheduleList">
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times"></i>
+                            <h3>No scheduled uploads</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- ==================== ANALYTICS ==================== -->
+        <section id="section-analytics" class="section">
+            <div class="section-header">
+                <h1><i class="fas fa-chart-line"></i> Analytics</h1>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-chart-bar"></i> Channel Performance</h2>
+                </div>
+                <div class="card-body">
+                    <div class="analytics-grid">
+                        <div class="analytics-card">
+                            <h4>Videos Generated</h4>
+                            <div class="analytics-number" id="analyticsGenerated">0</div>
+                        </div>
+                        <div class="analytics-card">
+                            <h4>Successfully Uploaded</h4>
+                            <div class="analytics-number" id="analyticsUploaded">0</div>
+                        </div>
+                        <div class="analytics-card">
+                            <h4>Failed</h4>
+                            <div class="analytics-number" id="analyticsFailed">0</div>
+                        </div>
+                        <div class="analytics-card">
+                            <h4>Success Rate</h4>
+                            <div class="analytics-number" id="analyticsRate">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- ==================== AUTO MODE ==================== -->
+        <section id="section-auto-mode" class="section">
+            <div class="section-header">
+                <h1><i class="fas fa-play-circle"></i> Auto Mode (24/7)</h1>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-robot"></i> Fully Automatic Mode</h2>
+                </div>
+                <div class="card-body">
+                    <div class="auto-mode-panel">
+                        <div class="auto-mode-description">
+                            <h3>🤖 What Auto Mode Does:</h3>
+                            <ul>
+                                <li>✅ Automatically picks trending topics from your niche</li>
+                                <li>✅ Generates Hindi scripts with AI</li>
+                                <li>✅ Creates realistic voice over</li>
+                                <li>✅ Makes professional videos with subtitles</li>
+                                <li>✅ Generates SEO-optimized titles, tags, hashtags</li>
+                                <li>✅ Uploads at peak hours for maximum views</li>
+                                <li>✅ Posts to both YouTube and Facebook</li>
+                                <li>✅ Runs 24/7 even when your laptop is off</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="auto-mode-settings">
+                            <div class="form-group">
+                                <label>Videos Per Day</label>
+                                <select id="autoVideosPerDay" class="form-input">
+                                    <option value="1">1 Video / Day</option>
+                                    <option value="2" selected>2 Videos / Day</option>
+                                    <option value="3">3 Videos / Day</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Video Types to Generate</label>
+                                <div class="checkbox-inline">
+                                    <label>
+                                        <input type="checkbox" id="autoShort" checked>
+                                        📱 Shorts/Reels
+                                    </label>
+                                    <label>
+                                        <input type="checkbox" id="autoLong">
+                                        🖥️ Long Videos
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="auto-mode-controls">
+                            <button class="btn btn-success btn-xl" onclick="startAutoMode()" id="autoStartBtn">
+                                <i class="fas fa-play"></i> Start Auto Mode
+                            </button>
+                            <button class="btn btn-danger btn-xl" onclick="stopAutoMode()" 
+                                    id="autoStopBtn" style="display:none;">
+                                <i class="fas fa-stop"></i> Stop Auto Mode
+                            </button>
+                        </div>
+                        
+                        <!-- Auto Mode Log -->
+                        <div class="auto-log" id="autoLog" style="display:none;">
+                            <h3><i class="fas fa-terminal"></i> Activity Log</h3>
+                            <div class="log-content" id="logContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+    </main>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p id="loadingText">Processing...</p>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
