@@ -1,56 +1,118 @@
-/**
- * Main Application Logic
- * Auto Video Bot Dashboard
- */
-
-// ==================== INITIALIZATION ====================
-document.addEventListener('DOMContentLoaded', () => {
-    loadSavedSettings();
-    checkBackendConnection();
-    setupEventListeners();
-    
-    // Auto-refresh every 30 seconds
-    setInterval(checkBackendConnection, 30000);
+document.addEventListener('DOMContentLoaded', function() {
+    checkConnection();
+    setupEvents();
+    setInterval(checkConnection, 30000);
 });
 
-function setupEventListeners() {
-    // Niche change
-    document.getElementById('channelNiche').addEventListener('change', function() {
-        document.getElementById('customNicheGroup').style.display = 
-            this.value === 'custom' ? 'block' : 'none';
-    });
-    
-    // Video type checkboxes
-    document.getElementById('videoShort').addEventListener('change', function() {
-        document.getElementById('shortDurationGroup').style.display = 
-            this.checked ? 'block' : 'none';
-    });
-    
-    document.getElementById('videoLong').addEventListener('change', function() {
-        document.getElementById('longDurationGroup').style.display = 
-            this.checked ? 'block' : 'none';
-    });
+function setupEvents() {
+    var niche = document.getElementById('channelNiche');
+    if (niche) {
+        niche.addEventListener('change', function() {
+            var cg = document.getElementById('customNicheGroup');
+            if (cg) cg.style.display = this.value === 'custom' ? 'block' : 'none';
+        });
+    }
+
+    var vs = document.getElementById('videoShort');
+    if (vs) {
+        vs.addEventListener('change', function() {
+            var g = document.getElementById('shortDurationGroup');
+            if (g) g.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+
+    var vl = document.getElementById('videoLong');
+    if (vl) {
+        vl.addEventListener('change', function() {
+            var g = document.getElementById('longDurationGroup');
+            if (g) g.style.display = this.checked ? 'block' : 'none';
+        });
+    }
 }
 
-// ==================== NAVIGATION ====================
-function showSection(sectionName) {
-    // Hide all sections
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    
-    // Show selected section
-    const section = document.getElementById(`section-${sectionName}`);
+async function checkConnection() {
+    var backendBadge = document.querySelector('#backendConnection .status-badge');
+    var ytBadge = document.querySelector('#ytConnection .status-badge');
+    var fbBadge = document.querySelector('#fbConnection .status-badge');
+
+    try {
+        var ping = await API.ping();
+
+        if (backendBadge) {
+            backendBadge.textContent = 'Connected';
+            backendBadge.className = 'status-badge connected';
+        }
+        updateBotStatus(true);
+
+        try {
+            var conn = await API.testConnections();
+
+            if (ytBadge) {
+                if (conn.youtube) {
+                    ytBadge.textContent = 'Connected';
+                    ytBadge.className = 'status-badge connected';
+                } else {
+                    ytBadge.textContent = 'Not Connected';
+                    ytBadge.className = 'status-badge disconnected';
+                }
+            }
+
+            if (fbBadge) {
+                if (conn.facebook) {
+                    fbBadge.textContent = 'Connected';
+                    fbBadge.className = 'status-badge connected';
+                } else {
+                    fbBadge.textContent = 'Not Connected';
+                    fbBadge.className = 'status-badge disconnected';
+                }
+            }
+        } catch(e) {
+            console.log('Connection test error:', e);
+        }
+
+    } catch(e) {
+        if (backendBadge) {
+            backendBadge.textContent = 'Not Connected';
+            backendBadge.className = 'status-badge disconnected';
+        }
+        updateBotStatus(false);
+    }
+}
+
+function updateBotStatus(online) {
+    var dot = document.querySelector('#botStatus .status-dot');
+    var text = document.querySelector('#botStatus span');
+    var ldot = document.querySelector('#botStatusLarge .pulse-dot');
+    var ltext = document.querySelector('#botStatusLarge span');
+
+    if (online) {
+        if (dot) { dot.className = 'status-dot online'; }
+        if (text) { text.textContent = 'Bot Online'; }
+        if (ldot) { ldot.className = 'pulse-dot online'; }
+        if (ltext) { ltext.textContent = 'Bot is Online'; }
+    } else {
+        if (dot) { dot.className = 'status-dot offline'; }
+        if (text) { text.textContent = 'Bot Offline'; }
+        if (ldot) { ldot.className = 'pulse-dot offline'; }
+        if (ltext) { ltext.textContent = 'Bot is Offline'; }
+    }
+}
+
+function showSection(name) {
+    var sections = document.querySelectorAll('.section');
+    for (var i = 0; i < sections.length; i++) {
+        sections[i].classList.remove('active');
+    }
+
+    var section = document.getElementById('section-' + name);
     if (section) section.classList.add('active');
-    
-    // Update nav
-    document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
-    event.currentTarget?.classList.add('active');
-    
-    // Load section data
-    switch(sectionName) {
-        case 'dashboard': refreshDashboard(); break;
-        case 'videos': loadVideos(); break;
-        case 'schedule': loadSchedule(); break;
-        case 'analytics': loadAnalytics(); break;
+
+    var links = document.querySelectorAll('.nav-links li');
+    for (var i = 0; i < links.length; i++) {
+        links[i].classList.remove('active');
+    }
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
     }
 }
 
@@ -58,527 +120,242 @@ function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
 }
 
-// ==================== BACKEND CONNECTION ====================
-async function checkBackendConnection() {
-    const badge = document.querySelector('#backendConnection .status-badge');
-    
-    try {
-        const result = await API.ping();
-        badge.textContent = 'Connected';
-        badge.className = 'status-badge connected';
-        updateBotStatus(true);
-        return true;
-    } catch (e) {
-        badge.textContent = 'Not Connected';
-        badge.className = 'status-badge disconnected';
-        updateBotStatus(false);
-        return false;
-    }
-}
+async function saveSettings(e) {
+    if (e) e.preventDefault();
 
-function updateBotStatus(online) {
-    const statusDot = document.querySelector('#botStatus .status-dot');
-    const statusText = document.querySelector('#botStatus span');
-    const largeDot = document.querySelector('#botStatusLarge .pulse-dot');
-    const largeText = document.querySelector('#botStatusLarge span');
-    
-    if (online) {
-        statusDot?.classList.replace('offline', 'online');
-        if (statusText) statusText.textContent = 'Bot Online';
-        largeDot?.classList.replace('offline', 'online');
-        if (largeText) largeText.textContent = 'Bot is Online';
-    } else {
-        statusDot?.classList.replace('online', 'offline');
-        if (statusText) statusText.textContent = 'Bot Offline';
-        largeDot?.classList.replace('online', 'offline');
-        if (largeText) largeText.textContent = 'Bot is Offline';
-    }
-}
-
-// ==================== SETTINGS ====================
-async function saveSettings(event) {
-    event.preventDefault();
-    
-    const settings = {
-        channel_name: document.getElementById('channelName').value,
-        channel_niche: document.getElementById('channelNiche').value === 'custom' 
-            ? document.getElementById('customNiche').value 
-            : document.getElementById('channelNiche').value,
-        youtube_channel_id: document.getElementById('youtubeChannelId').value,
-        youtube_api_key: document.getElementById('youtubeApiKey').value,
-        facebook_page_id: document.getElementById('facebookPageId').value,
-        facebook_token: document.getElementById('facebookToken').value,
-        video_short: document.getElementById('videoShort').checked,
-        video_long: document.getElementById('videoLong').checked,
-        short_duration: parseInt(document.getElementById('shortDuration').value),
-        long_duration: parseInt(document.getElementById('longDuration').value),
-        voice: document.getElementById('voiceSelect').value,
-        voice_speed: document.getElementById('voiceSpeed').value + '%',
-        videos_per_day: parseInt(document.getElementById('videosPerDay').value),
-        upload_youtube: document.getElementById('uploadYoutube').checked,
-        upload_facebook: document.getElementById('uploadFacebook').checked,
-        post_strategy: document.getElementById('postStrategy').value,
+    var settings = {
+        channel_name: val('channelName'),
+        channel_niche: val('channelNiche') === 'custom' ? val('customNiche') : val('channelNiche'),
+        youtube_channel_id: val('youtubeChannelId'),
+        youtube_api_key: val('youtubeApiKey'),
+        facebook_page_id: val('facebookPageId'),
+        facebook_token: val('facebookToken'),
+        video_short: checked('videoShort'),
+        video_long: checked('videoLong'),
+        short_duration: parseInt(val('shortDuration') || '60'),
+        long_duration: parseInt(val('longDuration') || '5'),
+        voice: val('voiceSelect'),
+        voice_speed: val('voiceSpeed') + '%',
+        videos_per_day: parseInt(val('videosPerDay') || '1'),
+        upload_youtube: checked('uploadYoutube'),
+        upload_facebook: checked('uploadFacebook'),
+        post_strategy: val('postStrategy')
     };
-    
-    // Save locally
-    localStorage.setItem('videobot_settings', JSON.stringify(settings));
-    
-    // Save to backend
+
     try {
         await API.saveSettings(settings);
-        showToast('Settings saved successfully!', 'success');
-    } catch (e) {
-        // Still saved locally
-        showToast('Settings saved locally. Backend not connected.', 'info');
+        showToast('Settings saved!', 'success');
+    } catch(e) {
+        showToast('Saved locally only', 'info');
     }
 }
 
-function loadSavedSettings() {
-    const saved = localStorage.getItem('videobot_settings');
-    if (!saved) return;
-    
-    try {
-        const settings = JSON.parse(saved);
-        
-        if (settings.channel_name) document.getElementById('channelName').value = settings.channel_name;
-        if (settings.channel_niche) document.getElementById('channelNiche').value = settings.channel_niche;
-        if (settings.youtube_channel_id) document.getElementById('youtubeChannelId').value = settings.youtube_channel_id;
-        if (settings.youtube_api_key) document.getElementById('youtubeApiKey').value = settings.youtube_api_key;
-        if (settings.facebook_page_id) document.getElementById('facebookPageId').value = settings.facebook_page_id;
-        if (settings.facebook_token) document.getElementById('facebookToken').value = settings.facebook_token;
-        if (settings.video_short !== undefined) document.getElementById('videoShort').checked = settings.video_short;
-        if (settings.video_long !== undefined) document.getElementById('videoLong').checked = settings.video_long;
-        if (settings.short_duration) document.getElementById('shortDuration').value = settings.short_duration;
-        if (settings.long_duration) document.getElementById('longDuration').value = settings.long_duration;
-        if (settings.voice) document.getElementById('voiceSelect').value = settings.voice;
-        if (settings.videos_per_day) document.getElementById('videosPerDay').value = settings.videos_per_day;
-        if (settings.upload_youtube !== undefined) document.getElementById('uploadYoutube').checked = settings.upload_youtube;
-        if (settings.upload_facebook !== undefined) document.getElementById('uploadFacebook').checked = settings.upload_facebook;
-        if (settings.post_strategy) document.getElementById('postStrategy').value = settings.post_strategy;
-        
-        // Update display values
-        document.getElementById('shortDurVal').textContent = (settings.short_duration || 60) + 's';
-        document.getElementById('longDurVal').textContent = (settings.long_duration || 5) + ' min';
-        
-    } catch (e) {
-        console.error('Error loading settings:', e);
-    }
+function val(id) {
+    var el = document.getElementById(id);
+    return el ? el.value : '';
+}
+
+function checked(id) {
+    var el = document.getElementById(id);
+    return el ? el.checked : false;
 }
 
 async function testConnection() {
-    showToast('Testing connections...', 'info');
-    
+    showToast('Testing...', 'info');
     try {
-        const result = await API.testConnections();
-        
-        // Update YouTube status
-        const ytBadge = document.querySelector('#ytConnection .status-badge');
-        if (result.youtube) {
-            ytBadge.textContent = 'Connected';
-            ytBadge.className = 'status-badge connected';
-        }
-        
-        // Update Facebook status
-        const fbBadge = document.querySelector('#fbConnection .status-badge');
-        if (result.facebook) {
-            fbBadge.textContent = 'Connected';
-            fbBadge.className = 'status-badge connected';
-        }
-        
-        showToast('Connection test complete!', 'success');
-    } catch (e) {
-        showToast('Backend not connected. Deploy backend first.', 'error');
+        var r = await API.testConnections();
+        var msg = 'YouTube: ' + (r.youtube ? '✅' : '❌') +
+                  ' | Facebook: ' + (r.facebook ? '✅' : '❌');
+        showToast(msg, r.youtube ? 'success' : 'info');
+    } catch(e) {
+        showToast('Backend not connected', 'error');
     }
 }
 
 async function connectYouTube() {
     try {
-        const result = await API.getYouTubeAuthUrl();
-        if (result.auth_url) {
-            window.open(result.auth_url, '_blank');
-            showToast('Complete YouTube authorization in the new window', 'info');
+        var r = await API.getYouTubeAuthUrl();
+        if (r.auth_url) {
+            window.open(r.auth_url, '_blank');
+            showToast('Complete YouTube login in new window', 'info');
+        } else {
+            showToast(r.error || 'Setup YouTube credentials first', 'error');
         }
-    } catch (e) {
-        showToast('Backend not connected. Deploy backend first.', 'error');
+    } catch(e) {
+        showToast('Backend not connected', 'error');
     }
 }
 
-// ==================== VIDEO GENERATION ====================
-let currentGenType = 'short';
-let pollInterval = null;
+var currentGenType = 'short';
 
 function setGenType(type, btn) {
     currentGenType = type;
-    document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    var btns = document.querySelectorAll('.btn-group .btn');
+    for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+    if (btn) btn.classList.add('active');
 }
 
 function toggleTopicInput() {
-    const mode = document.querySelector('input[name="topicMode"]:checked').value;
-    document.getElementById('customTopicGroup').style.display = 
-        mode === 'custom' ? 'block' : 'none';
+    var mode = document.querySelector('input[name="topicMode"]:checked');
+    var group = document.getElementById('customTopicGroup');
+    if (group && mode) {
+        group.style.display = mode.value === 'custom' ? 'block' : 'none';
+    }
 }
 
 async function generateVideo() {
-    const generateBtn = document.getElementById('generateBtn');
-    const progressContainer = document.getElementById('progressContainer');
-    const resultContainer = document.getElementById('resultContainer');
-    
-    // Get settings
-    const settings = JSON.parse(localStorage.getItem('videobot_settings') || '{}');
-    
-    // Get topic
-    const topicMode = document.querySelector('input[name="topicMode"]:checked').value;
-    const customTopic = document.getElementById('customTopic').value;
-    
-    const options = {
-        topic: topicMode === 'custom' ? customTopic : null,
-        video_type: currentGenType,
-        auto_upload: document.getElementById('genAutoUpload').checked,
-        add_subtitles: document.getElementById('genAddSubtitles').checked,
-        ...settings
-    };
-    
-    // Validate
-    if (topicMode === 'custom' && !customTopic) {
-        showToast('Please enter a topic!', 'error');
+    var btn = document.getElementById('generateBtn');
+    var progress = document.getElementById('progressContainer');
+    var result = document.getElementById('resultContainer');
+
+    var mode = document.querySelector('input[name="topicMode"]:checked');
+    var topic = mode && mode.value === 'custom' ? val('customTopic') : null;
+
+    if (mode && mode.value === 'custom' && !topic) {
+        showToast('Enter a topic!', 'error');
         return;
     }
-    
-    // Show progress
-    generateBtn.disabled = true;
-    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-    progressContainer.style.display = 'block';
-    resultContainer.style.display = 'none';
-    
-    // Reset steps
-    resetProgressSteps();
-    
+
+    var options = {
+        topic: topic,
+        video_type: currentGenType,
+        auto_upload: checked('genAutoUpload'),
+        channel_niche: val('channelNiche'),
+        voice: val('voiceSelect'),
+        upload_youtube: checked('uploadYoutube'),
+        upload_facebook: checked('uploadFacebook'),
+        facebook_page_id: val('facebookPageId'),
+        facebook_token: val('facebookToken')
+    };
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    if (progress) progress.style.display = 'block';
+    if (result) result.style.display = 'none';
+    resetSteps();
+
     try {
-        // Start generation
-        updateStep(1, 'active');
-        const result = await API.generateVideo(options);
-        
-        if (result.task_id) {
-            // Poll for status
-            pollInterval = setInterval(() => pollGenerationStatus(result.task_id), 3000);
-        } else if (result.success) {
-            // Direct result
-            showGenerationComplete(result);
+        var r = await API.generateVideo(options);
+        if (r.task_id) {
+            pollStatus(r.task_id);
         }
-    } catch (e) {
-        showToast(`Error: ${e.message}`, 'error');
-        
-        // Demo mode if backend not connected
-        if (e.message.includes('fetch') || e.message.includes('NetworkError')) {
-            showToast('Running in demo mode (backend not connected)', 'info');
-            runDemoGeneration();
-        } else {
-            generateBtn.disabled = false;
-            generateBtn.innerHTML = '<i class="fas fa-magic"></i> Generate Video Now';
-        }
+    } catch(e) {
+        showToast('Error: ' + e.message, 'error');
+        runDemo();
     }
 }
 
-async function pollGenerationStatus(taskId) {
-    try {
-        const status = await API.getGenerationStatus(taskId);
-        
-        // Update progress
-        if (status.step) {
-            for (let i = 1; i <= 5; i++) {
-                if (i < status.step) updateStep(i, 'done');
-                else if (i === status.step) updateStep(i, 'active');
+var pollTimer = null;
+
+function pollStatus(taskId) {
+    pollTimer = setInterval(async function() {
+        try {
+            var s = await API.getGenerationStatus(taskId);
+
+            if (s.step) {
+                for (var i = 1; i <= 5; i++) {
+                    if (i < s.step) setStep(i, 'done');
+                    else if (i === s.step) setStep(i, 'active');
+                }
+                var pct = (s.step / 5) * 100;
+                var fill = document.getElementById('progressFill');
+                var text = document.getElementById('progressText');
+                if (fill) fill.style.width = pct + '%';
+                if (text) text.textContent = s.message || 'Processing...';
             }
-            
-            const progress = (status.step / 5) * 100;
-            document.getElementById('progressFill').style.width = progress + '%';
-            document.getElementById('progressText').textContent = status.message || 'Processing...';
+
+            if (s.status === 'completed') {
+                clearInterval(pollTimer);
+                showComplete(s);
+            } else if (s.status === 'failed') {
+                clearInterval(pollTimer);
+                showToast('Failed: ' + s.message, 'error');
+                resetBtn();
+            }
+        } catch(e) {
+            console.log('Poll error');
         }
-        
-        // Check if complete
-        if (status.status === 'completed') {
-            clearInterval(pollInterval);
-            showGenerationComplete(status);
-        } else if (status.status === 'failed') {
-            clearInterval(pollInterval);
-            showToast('Generation failed: ' + status.error, 'error');
-            resetGenerateButton();
-        }
-    } catch (e) {
-        console.error('Poll error:', e);
+    }, 3000);
+}
+
+function showComplete(r) {
+    for (var i = 1; i <= 5; i++) setStep(i, 'done');
+    var fill = document.getElementById('progressFill');
+    var text = document.getElementById('progressText');
+    if (fill) fill.style.width = '100%';
+    if (text) text.textContent = 'Complete!';
+
+    var rc = document.getElementById('resultContainer');
+    var rd = document.getElementById('resultDetails');
+    if (rd) {
+        rd.innerHTML =
+            '<p>📹 <b>Title:</b> ' + (r.title || 'N/A') + '</p>' +
+            '<p>📱 <b>Type:</b> ' + (r.video_type || 'short') + '</p>' +
+            '<p>🏷 <b>Tags:</b> ' + (r.tags || []).join(', ') + '</p>' +
+            '<p>#️⃣ <b>Hashtags:</b> ' + (r.hashtags || []).join(' ') + '</p>' +
+            (r.youtube_url ? '<p>🎬 <b>YouTube:</b> <a href="' + r.youtube_url + '" target="_blank">' + r.youtube_url + '</a></p>' : '');
+    }
+    if (rc) rc.style.display = 'block';
+    showToast('Video generated! 🎉', 'success');
+    resetBtn();
+}
+
+function resetBtn() {
+    var btn = document.getElementById('generateBtn');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-magic"></i> Generate Video Now';
     }
 }
 
-function showGenerationComplete(result) {
-    // Mark all steps done
-    for (let i = 1; i <= 5; i++) updateStep(i, 'done');
-    document.getElementById('progressFill').style.width = '100%';
-    document.getElementById('progressText').textContent = 'Complete!';
-    
-    // Show result
-    const resultContainer = document.getElementById('resultContainer');
-    const resultDetails = document.getElementById('resultDetails');
-    
-    resultDetails.innerHTML = `
-        <p>📹 <strong>Title:</strong> ${result.title || 'N/A'}</p>
-        <p>📱 <strong>Type:</strong> ${result.video_type || 'short'}</p>
-        <p>🏷️ <strong>Tags:</strong> ${(result.tags || []).join(', ')}</p>
-        <p>#️⃣ <strong>Hashtags:</strong> ${(result.hashtags || []).join(' ')}</p>
-        ${result.youtube_url ? `<p>🎬 <strong>YouTube:</strong> <a href="${result.youtube_url}" target="_blank">${result.youtube_url}</a></p>` : ''}
-        ${result.scheduled ? `<p>📅 <strong>Scheduled:</strong> ${result.scheduled}</p>` : ''}
-    `;
-    
-    resultContainer.style.display = 'block';
-    showToast('Video generated successfully! 🎉', 'success');
-    resetGenerateButton();
-}
-
-function resetGenerateButton() {
-    const btn = document.getElementById('generateBtn');
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-magic"></i> Generate Video Now';
-}
-
-function updateStep(stepNum, status) {
-    const step = document.getElementById(`step${stepNum}`);
+function setStep(n, status) {
+    var step = document.getElementById('step' + n);
     if (!step) return;
-    
-    step.className = `progress-step ${status}`;
-    const statusEl = step.querySelector('.step-status');
-    
-    if (status === 'active') {
-        statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    } else if (status === 'done') {
-        statusEl.innerHTML = '<i class="fas fa-check"></i>';
-    } else {
-        statusEl.innerHTML = '';
-    }
+    step.className = 'progress-step ' + status;
+    var st = step.querySelector('.step-status');
+    if (!st) return;
+    if (status === 'active') st.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    else if (status === 'done') st.innerHTML = '<i class="fas fa-check"></i>';
+    else st.innerHTML = '';
 }
 
-function resetProgressSteps() {
-    for (let i = 1; i <= 5; i++) updateStep(i, '');
-    document.getElementById('progressFill').style.width = '0%';
-    document.getElementById('progressText').textContent = 'Starting...';
+function resetSteps() {
+    for (var i = 1; i <= 5; i++) setStep(i, '');
+    var f = document.getElementById('progressFill');
+    var t = document.getElementById('progressText');
+    if (f) f.style.width = '0%';
+    if (t) t.textContent = 'Starting...';
 }
 
-// Demo mode (when backend not connected)
-function runDemoGeneration() {
-    const steps = [
-        { step: 1, delay: 2000, msg: '🤖 AI Script generate થઈ રહી છે...' },
-        { step: 2, delay: 4000, msg: '🔊 Voice Over create થઈ રહું છે...' },
-        { step: 3, delay: 7000, msg: '🎬 Video render થઈ રહી છે...' },
-        { step: 4, delay: 9000, msg: '📋 Metadata generate થઈ રહું છે...' },
-        { step: 5, delay: 11000, msg: '📅 Upload schedule થઈ રહું છે...' },
+function runDemo() {
+    var steps = [
+        {s:1, d:2000, m:'🤖 Script generating...'},
+        {s:2, d:4000, m:'🔊 Voice creating...'},
+        {s:3, d:7000, m:'🎬 Video rendering...'},
+        {s:4, d:9000, m:'📋 Metadata...'},
+        {s:5, d:11000, m:'📅 Scheduling...'}
     ];
-    
-    steps.forEach(({ step, delay, msg }) => {
-        setTimeout(() => {
-            for (let i = 1; i < step; i++) updateStep(i, 'done');
-            updateStep(step, 'active');
-            document.getElementById('progressFill').style.width = (step / 5 * 100) + '%';
-            document.getElementById('progressText').textContent = msg;
-        }, delay);
+    steps.forEach(function(x) {
+        setTimeout(function() {
+            for (var i = 1; i < x.s; i++) setStep(i, 'done');
+            setStep(x.s, 'active');
+            var f = document.getElementById('progressFill');
+            var t = document.getElementById('progressText');
+            if (f) f.style.width = (x.s/5*100) + '%';
+            if (t) t.textContent = x.m;
+        }, x.d);
     });
-    
-    setTimeout(() => {
-        showGenerationComplete({
-            title: 'सफलता के 5 नियम | 5 Rules of Success',
+    setTimeout(function() {
+        showComplete({
+            title: 'सफलता के नियम',
             video_type: currentGenType,
-            tags: ['motivation', 'success', 'hindi', 'viral'],
-            hashtags: ['#motivation', '#hindi', '#success', '#viral', '#trending'],
-            scheduled: 'Today at 8:00 PM (YouTube), 7:00 PM (Facebook)',
+            tags: ['motivation','hindi','viral'],
+            hashtags: ['#motivation','#hindi','#viral']
         });
     }, 13000);
 }
 
-// ==================== VIDEOS ====================
 async function loadVideos() {
     try {
-        const result = await API.getVideos();
-        renderVideoGrid(result.videos || []);
-    } catch (e) {
-        console.log('Could not load videos');
-    }
-}
-
-function renderVideoGrid(videos) {
-    const grid = document.getElementById('videoGrid');
-    
-    if (!videos.length) {
-        grid.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-film"></i>
-                <h3>No videos yet</h3>
-                <p>Generate your first video!</p>
-                <button class="btn btn-primary" onclick="showSection('generate')">
-                    <i class="fas fa-magic"></i> Generate
-                </button>
-            </div>
-        `;
-        return;
-    }
-    
-    grid.innerHTML = videos.map(v => `
-        <div class="video-card">
-            <div class="video-card-thumbnail">
-                <i class="fas fa-play-circle"></i>
-            </div>
-            <div class="video-card-body">
-                <div class="video-card-title">${v.title || 'Untitled'}</div>
-                <div class="video-card-meta">
-                    <span><i class="fas fa-clock"></i> ${v.duration || 'N/A'}</span>
-                    <span><i class="fas fa-calendar"></i> ${v.created || 'N/A'}</span>
-                </div>
-            </div>
-            <div class="video-card-actions">
-                <button class="btn btn-primary btn-sm" onclick="uploadToYoutube('${v.id}')">
-                    <i class="fab fa-youtube"></i> YT
-                </button>
-                <button class="btn btn-info btn-sm" onclick="uploadToFacebook('${v.id}')">
-                    <i class="fab fa-facebook"></i> FB
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
-
-// ==================== DASHBOARD ====================
-async function refreshDashboard() {
-    try {
-        const analytics = await API.getAnalytics();
-        document.getElementById('totalVideos').textContent = analytics.total_videos || 0;
-        document.getElementById('ytUploads').textContent = analytics.youtube_uploads || 0;
-        document.getElementById('fbUploads').textContent = analytics.facebook_uploads || 0;
-        document.getElementById('scheduledCount').textContent = analytics.scheduled || 0;
-    } catch (e) {
-        // Keep default values
-    }
-}
-
-// ==================== BOT CONTROL ====================
-async function startBot() {
-    const settings = JSON.parse(localStorage.getItem('videobot_settings') || '{}');
-    
-    try {
-        await API.startBot(settings);
-        showToast('Bot started! 🤖', 'success');
-        updateBotStatus(true);
-    } catch (e) {
-        showToast('Could not start bot. Check backend connection.', 'error');
-    }
-}
-
-async function stopBot() {
-    try {
-        await API.stopBot();
-        showToast('Bot stopped.', 'info');
-    } catch (e) {
-        showToast('Could not stop bot.', 'error');
-    }
-}
-
-// ==================== AUTO MODE ====================
-async function startAutoMode() {
-    const config = {
-        videos_per_day: parseInt(document.getElementById('autoVideosPerDay').value),
-        make_shorts: document.getElementById('autoShort').checked,
-        make_long: document.getElementById('autoLong').checked,
-        ...JSON.parse(localStorage.getItem('videobot_settings') || '{}')
-    };
-    
-    try {
-        await API.startAutoMode(config);
+        var r = await API.getVideos();
         
-        document.getElementById('autoStartBtn').style.display = 'none';
-        document.getElementById('autoStopBtn').style.display = 'inline-flex';
-        document.getElementById('autoLog').style.display = 'block';
-        
-        addLogEntry('🤖 Auto mode started!');
-        addLogEntry(`📹 Will create ${config.videos_per_day} video(s) per day`);
-        addLogEntry('⏰ Posting at peak hours automatically');
-        
-        showToast('Auto Mode started! Bot will run 24/7 🚀', 'success');
-        
-        // Start polling for logs
-        setInterval(pollAutoLog, 10000);
-        
-    } catch (e) {
-        showToast('Start failed. Deploy backend to Render.com first.', 'error');
-        
-        // Demo
-        document.getElementById('autoStartBtn').style.display = 'none';
-        document.getElementById('autoStopBtn').style.display = 'inline-flex';
-        document.getElementById('autoLog').style.display = 'block';
-        addLogEntry('⚠️ Demo mode - Connect backend for real operation');
-        addLogEntry('📌 Deploy backend to Render.com (free)');
-    }
-}
-
-async function stopAutoMode() {
-    try {
-        await API.stopAutoMode();
-    } catch (e) {}
-    
-    document.getElementById('autoStartBtn').style.display = 'inline-flex';
-    document.getElementById('autoStopBtn').style.display = 'none';
-    
-    addLogEntry('⏹️ Auto mode stopped');
-    showToast('Auto Mode stopped', 'info');
-}
-
-function addLogEntry(message) {
-    const log = document.getElementById('logContent');
-    const time = new Date().toLocaleTimeString();
-    log.innerHTML += `<div class="log-entry">[${time}] ${message}</div>`;
-    log.scrollTop = log.scrollHeight;
-}
-
-async function pollAutoLog() {
-    try {
-        const status = await API.getBotStatus();
-        if (status.latest_log) {
-            addLogEntry(status.latest_log);
-        }
-    } catch (e) {}
-}
-
-// ==================== SCHEDULE ====================
-async function loadSchedule() {
-    try {
-        const result = await API.getSchedule();
-        // Render schedule
-    } catch (e) {}
-}
-
-// ==================== ANALYTICS ====================
-async function loadAnalytics() {
-    try {
-        const result = await API.getAnalytics();
-        document.getElementById('analyticsGenerated').textContent = result.total_videos || 0;
-        document.getElementById('analyticsUploaded').textContent = result.uploaded || 0;
-        document.getElementById('analyticsFailed').textContent = result.failed || 0;
-        
-        const total = (result.uploaded || 0) + (result.failed || 0);
-        const rate = total > 0 ? Math.round((result.uploaded / total) * 100) : 0;
-        document.getElementById('analyticsRate').textContent = rate + '%';
-    } catch (e) {}
-}
-
-// ==================== TOAST NOTIFICATIONS ====================
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toastContainer');
-    
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    
-    const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle' };
-    toast.innerHTML = `<i class="fas fa-${icons[type] || 'info-circle'}"></i> ${message}`;
-    
-    container.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.animation = 'slideIn 0.3s ease reverse';
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
-}
