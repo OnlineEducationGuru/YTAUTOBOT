@@ -4,10 +4,16 @@ const API = {
     async request(endpoint, method, data) {
         const url = this.BASE_URL + '/api' + endpoint;
 
+        const controller = new AbortController();
+        const timeout = setTimeout(function() {
+            controller.abort();
+        }, 60000);
+
         const options = {
             method: method || 'GET',
             headers: { 'Content-Type': 'application/json' },
-            mode: 'cors'
+            mode: 'cors',
+            signal: controller.signal
         };
 
         if (data) {
@@ -16,9 +22,11 @@ const API = {
 
         try {
             const response = await fetch(url, options);
+            clearTimeout(timeout);
             return await response.json();
         } catch (error) {
-            console.error('API Error:', endpoint, error);
+            clearTimeout(timeout);
+            console.error('API Error:', endpoint, error.message);
             throw error;
         }
     },
